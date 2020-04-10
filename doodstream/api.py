@@ -6,12 +6,15 @@ class DoodStream:
     '''Python doodstream api wrapper from official https://doodstream.com/api
     
     all method below return dict that contain info'''
+    
+    base_url = "https://doodstream.com/api/"
+    
     def __init__(self, api_key):
         '''init doodstream
         Args:
             api_key (str): api key from doodstream'''
         self.api_key = api_key
-        base_url = "https://doodstream.com/api/"
+        
     
     def req(self, url):
         '''requests to api
