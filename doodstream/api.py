@@ -1,7 +1,6 @@
 import requests
 import re
 import sys
-import json
 
 class DoodStream:
     '''Python doodstream api wrapper from official https://doodstream.com/api
@@ -56,8 +55,7 @@ class DoodStream:
         post_data = {"api_key": self.api_key}
         filename = path.split("/")[-1]
         post_files = {"file": (filename, open(path, "rb"))}
-        up = requests.post(url_for_upload, data=post_data, files=post_files)
-        res = json.loads(up.text)
+        res = requests.post(url_for_upload, data=post_data, files=post_files).json()
         if res["msg"] == "OK":
             return res
         else:
