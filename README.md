@@ -4,6 +4,8 @@
 
 ## ![https://doodstream.com/join/02i3l9brejix](https://i.doodcdn.com/img/468x60.gif)
 
+[![Downloads](https://static.pepy.tech/badge/doodstream)](https://pepy.tech/project/doodstream)
+
 DoodStream is a video hosting service were you can upload videos, share & make money.
 
 Don't have account? register [here](https://doodstream.com/join/02i3l9brejix).
@@ -36,7 +38,6 @@ from doodstream import DoodStream
 
 d = DoodStream("YOUR_API_KEY")
 
-
 # Check doodstream account info
 d.account_info()
 
@@ -49,18 +50,15 @@ d.local_upload("PATH_TO_YOUR_VIDEO")
 # Upload video from direct links
 d.remote_upload("DIRECT_VIDEO_LINK")
 
-# Get basic file info
-d.file_info("FILE_ID")
+# list all available method
+help(DoodStream)
 
-# Search videos in your Doodstream account
-d.search_videos("YOUR_KEYWORD")
-
-# Rename video filename
-d.rename_file("FILE_ID", "NEW_NAME")
-
-# Copy videos from another Doodstream user to your account
-d.copy_video("FILE_ID")
+# please refer to https://doodstream.com/api-docs
 ```
+
+---
+
+#### **Note : Please update to v1.x, all the v0.x are out to date**
 
 ---
 

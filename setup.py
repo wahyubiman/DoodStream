@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="doodstream",
-    version="0.1.4",
+    version="1.0.0",
     description="Unofficial python api wrapper from https://doodstream.com",
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
