@@ -1,172 +1,340 @@
-"""doodstream cli"""
-import click
-import os
+import requests
+import re
 import sys
-from doodstream import DoodStream
-
-api = os.environ.get("DOODSTREAM_API")
-d = DoodStream(api)
+from typing import Optional
 
 
-@click.group()
-def main():
-    """Doodstream free video hosting cli"""
-    if api == None or len(api) == 0:
-        print("Please set doodstream api key in environment variable first")
-        print("$ export DOODSTREAM_API=your_key_here")
-        sys.exit()
+class DoodStream:
+    """Python doodstream api wrapper from official https://doodstream.com/api"""
 
+    def __init__(self, api_key: str, base_url="https://doodapi.com/api/"):
+        """
+        init
 
-@main.command()
-def account():
-    """show basic account info"""
-    data = d.account_info()["result"]
-    print("#" * 10 + " Account Info " + "#" * 10)
-    print(f"Email : {data['email']}")
-    print(f"Balance : ${data['balance']}")
-    print(f"Used Storage : {int(int(data['storage_used'])/1024)} MB")
-    print(f"Storage Left : {data['storage_left']}")
-    print(f"Premium Expire : {data['premim_expire']}")
-    print("#" * 40)
+        Args:
+            api_key (str): api key from doodstream
+            base_url (str, optional): base api url. Defaults to "https://doodapi.com/api/".
+        """
+        self.api_key = api_key
+        self.base_url = base_url
 
+    def _req(self, url: str) -> dict:
+        """requests to api
 
-@main.command()
-def reports():
-    """show account report"""
-    report = d.account_reports()["result"]
-    print("#" * 10 + " Account Reports " + "#" * 10)
-    for data in report:
-        print(f">>> {data['day']} <<<")
-        print(f"Download : {data['downloads']}")
-        print(f"View : {data['views']}")
-        print(f"Profit View : ${data['profit_views']}")
-        print(f"Referral : {data['refs']}")
-        print(f"Profit Referral : ${data['profit_refs']}")
-        print(f"Profit Total : ${data['profit_total']}")
-        print("")
-    print("#" * 40)
+        Args:
+            url (str): api url
 
+        Return:
+            (dict): output dict from requests url"""
+        try:
+            r = requests.get(url)
+            response = r.json()
+            if response["msg"] == "Wrong Auth":
+                Exception("Invalid API key, please check your API key")
+            else:
+                return response
+        except ConnectionError as e:
+            Exception(e)
 
-@main.command()
-@click.argument("path", type=click.Path(exists=True))
-def upload(path):
-    """upload from local storage"""
-    try:
-        u = d.local_upload(path)
-        print("#" * 10 + " Local Upload " + "#" * 10)
-        print(f"Status : {u['status']}")
-        print(f"Video ID : {u['result'][0]['filecode']}")
-        print(f"Video Url : {u['result'][0]['download_url']}")
-        print("#" * 40)
-    except TypeError:
-        print(f"Unsopported video format for {str(path).split('/')[-1]}")
-        print(
-            "Supported video format : mkv, mp4, wmv, avi, mpeg4, mpegps, flv, 3gp, webm, mov, mpg, m4v"
-        )
-        sys.exit()
+    def account_info(self) -> dict:
+        """
+        Get basic info of your account
 
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}account/info?key={self.api_key}"
+        return self._req(url)
 
-@main.command()
-@click.argument("direct_link")
-def remote(direct_link):
-    """upload from direct link"""
-    if "http://" in direct_link or "https://" in direct_link:
-        r = d.remote_upload(direct_link)
-        print("#" * 10 + " Remote Upload " + "#" * 10)
-        print(f"Status : {r['msg']}")
-        print(f"File ID : {r['result']['filecode']}")
-        print("")
-        print(
-            "Please see your doodstream remote upload dashboard for further information"
-        )
-        print("#" * 40)
-    else:
-        print("#" * 10 + " Remote Upload " + "#" * 10)
-        print("\nPlease add http:// or https:// in link\n")
-        print("#" * 40)
+    def account_reports(
+        self,
+        last: Optional[str] = None,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+    ) -> dict:
+        """
+        Get reports of your account (default last 7 days)
 
+        Args:
+            last (Optional[str], optional): Last x days report. Defaults to None.
+            from_date (Optional[str], optional): From date - YYYY-MM-DD. Defaults to None.
+            to_date (Optional[str], optional): To date - YYYY-MM-DD. Defaults to None.
 
-@main.command()
-@click.argument("file_id")
-def info(file_id):
-    """show file info"""
-    info = d.file_info(file_id)
-    if info["status"] == 400:
-        print(info["msg"])
-        sys.exit()
-    print("#" * 10 + " File Info " + "#" * 10)
-    for i in info["result"]:
-        if "Not found or not your file" in str(i["status"]):
-            print("\nVideo Not found or not your file\n")
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}account/stats?key={self.api_key}"
+        if last != None:
+            url += f"&last={last}"
+        if from_date != None:
+            url = f"&from_date={from_date}"
+        if to_date != None:
+            url = f"&to_date={to_date}"
+        url = f"{self.base_url}account/stats?key={self.api_key}"
+        return self._req(url)
+
+    def dmca_list(
+        self, per_page: Optional[int] = None, page: Optional[int] = None
+    ) -> dict:
+        """
+        Get DMCA reported files list (500 results per page)
+
+        Args:
+            per_page (Optional[int]): Results per page (default 500). Defaults to None.
+            page (Optional[int], optional): Pagination. Defaults to None.
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}dmca/list?key={self.api_key}"
+        if per_page != None:
+            url += f"&per_page={per_page}"
+        if page != None:
+            url += f"&page={page}"
+        return self._req(url)
+
+    def local_upload(self, path):
+        """Upload from local storage
+
+        Args:
+            path (str): path to file
+        """
+        url = f"{self.base_url}upload/server?key={self.api_key}"
+        url_for_upload = self._req(url)["result"]
+        post_data = {"api_key": self.api_key}
+        filename = path.split("/")[-1]
+        post_files = {"file": (filename, open(path, "rb"))}
+        res = requests.post(url_for_upload, data=post_data, files=post_files).json()
+        if res["msg"] == "OK":
+            return res
         else:
-            print(f"Title : {i['title']}")
-            print(f"Uploaded : {i['uploaded']}")
-            print(f"Length : {i['length']}")
-            print(f"View : {i['views']}")
-            print(f"Last View : {i['last_view']}")
-            print(f"Single Image : {i['single_img']}")
-            print(f"Splash Image : {i['splash_img']}")
-            print(f"Protected Download : https://dood.watch{i['protected_dl']}")
-            print(f"Protected Embed : https://dood.watch{i['protected_embed']}")
-            print(f"Public Url : https://dood.watch/d/{file_id}")
-    print("#" * 40)
+            raise TypeError(
+                f"unsupported video format {filename}, please upload video with mkv, mp4, wmv, avi, mpeg4, mpegps, flv, 3gp, webm, mov, mpg & m4v format"
+            )
 
+    def copy_video(self, file_code: str, fld_id: Optional[str] = None) -> dict:
+        """
+        Copy / Clone your's or other's file
 
-@main.command()
-@click.argument("keyword")
-def search(keyword):
-    """search videos"""
-    s = d.search_videos(keyword)
-    print("#" * 10 + " Search Videos " + "#" * 10)
-    if len(s["result"]) == 0:
-        print("\nNot Found !!!\n")
-    else:
-        for result in s["result"]:
-            print("-" * 40)
-            print(f"Title : {result['title']}")
-            print(f"Uploaded : {result['uploaded']}")
-            print(f"Length : {result['length']}")
-            print(f"View : {result['views']}")
-            print(f"Single Image : {result['single_img']}")
-            print(f"Splash Image : {result['splash_img']}")
-            print(f"Public Url : https://dood.watch/d/{result['file_code']}")
-    print("#" * 40)
+        Args:
+            file_code (str): File code
+            fld_id (Optional[str], optional): Folder ID (to copy inside the folder). Defaults to None.
 
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}file/clone?key={self.api_key}&file_code={file_id}"
+        if fld_id != None:
+            url += f"&fld_id={fld_id}"
+        return self._req(url)
 
-@main.command()
-@click.argument("file_id")
-@click.argument("new_title")
-def rename(file_id, new_title):
-    """rename video title"""
-    print("#" * 10 + " Rename Videos " + "#" * 10)
-    r = d.rename_file(file_id, new_title)
-    if r["status"] == 200:
-        print("\nSuccess\n")
-    elif r["status"] == 403:
-        print(f"{r['msg']}")
-    elif r["status"] == 400:
-        print("Invalid file id")
-    print("#" * 40)
+    def remote_upload(
+        self,
+        direct_link: str,
+        fld_id: Optional[str] = None,
+        new_title: Optional[str] = None,
+    ) -> dict:
+        """
+        Upload files using direct links
 
+        Args:
+            direct_link (str): URL to upload
+            fld_id (Optional[str], optional): To upload inside a folder. Defaults to None.
+            new_title (Optional[str], optional): To set new title. Defaults to None.
 
-@main.command()
-@click.argument("file_id")
-def copy(file_id):
-    """copy doodstream video to your account"""
-    c = d.copy_video(file_id)
-    print("#" * 10 + " Copy Videos " + "#" * 10)
-    if "OK" in c["msg"]:
-        print("Success")
-        print(f"File Id : {c['result']['filecode']}")
-        print(f"Video Url : {c['result']['url']}")
-    else:
-        print("")
-        print(c["msg"])
-        print("")
-    print("#" * 40)
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}upload/url?key={self.api_key}&url={direct_link}"
+        if fld_id != None:
+            url += f"&fld_id={fld_id}"
+        if new_title != None:
+            url += f"&new_title={new_title}"
+        return self._req(url)
 
+    def remote_upload_list(self) -> dict:
+        """
+        Remote Upload List & Status
 
-"""
-if __name__ == '__main__':
-    main()
-"""
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}urlupload/list?key={self.api_key}"
+        return self._req(url)
+
+    def remote_upload_status(self, file_code: str) -> dict:
+        """
+        Remote Upload Status
+
+        Args:
+            file_code (str): File code of the file
+
+        Returns:
+            dict: response
+        """
+        url = (
+            f"{self.base_url}urlupload/status?key={self.api_key}&file_code={file_code}"
+        )
+        return self._req(url)
+
+    def remote_upload_slots(self) -> dict:
+        """
+        Get total & used remote upload slots
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}urlupload/slots?key={self.api_key}"
+        return self._req(url)
+
+    def remote_upload_action(
+        self,
+        restart_errors: bool,
+        clear_errors: Optional[bool] = None,
+        clear_all: Optional[bool] = None,
+        delete_code: Optional[str] = None,
+    ) -> dict:
+        """
+        Perform various actions on remote upload
+
+        Args:
+            restart_errors (bool): Restart all errors
+            clear_errors (Optional[bool], optional): Clear all errors. Defaults to None.
+            clear_all (Optional[bool], optional): Clear all. Defaults to None.
+            delete_code (Optional[str], optional): Delete a transfer, pass file_code. Defaults to None.
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}urlupload/actions?key={self.api_key}&restart_errors={restart_errors}"
+        if clear_errors != None:
+            url += f"&clear_errors={clear_errors}"
+        if clear_all != None:
+            url += f"&clear_all={clear_all}"
+        if delete_code != None:
+            url += f"&delete_code={delete_code}"
+        return self._req(url)
+
+    def create_folder(self, name: str, parent_id: Optional[str] = None) -> dict:
+        """
+        Create a folder
+
+        Args:
+            name (str): Name of the folder
+            parent_id (Optional[str], optional): Parent folder ID. Defaults to None.
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}folder/create?key={self.api_key}&name={name}"
+        if parent_id != None:
+            url += f"&parent_id={parent_id}"
+        return self._req(url)
+
+    def rename_folder(self, fld_id: str, name: str) -> dict:
+        """
+        Rename folder
+
+        Args:
+            fld_id (str): Folder ID
+            name (str): New name of the folder
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}folder/rename?key={self.api_key}&fld_id={fld_id}&name={name}"
+        return self._req(url)
+
+    def list_files(
+        self,
+        page: Optional[int] = None,
+        per_page: Optional[int] = None,
+        fld_id: Optional[str] = None,
+    ) -> dict:
+        """
+        List all files
+
+        Args:
+            page (Optional[int], optional): Pagination. Defaults to None.
+            per_page (Optional[int], optional): Max videos per page. Defaults to None.
+            fld_id (Optional[str], optional): Videos inside a folder. Defaults to None.
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}file/list?key={self.api_key}"
+        if page != None:
+            url += f"&page={page}"
+        if per_page != None:
+            url += f"&per_page={per_page}"
+        if fld_id != None:
+            url += f"&fld_id={fld_id}"
+        return self._req(url)
+
+    def file_status(self, file_code: str) -> dict:
+        """
+        Check status of your file
+
+        Args:
+            file_code (str): File code
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}file/check?key={self.api_key}&file_code={file_code}"
+        return self._req(url)
+
+    def file_info(self, file_code):
+        """
+        Get file info
+
+        Args:
+            file_code (_type_): File code
+
+        Returns:
+            _type_: response
+        """
+        url = f"{self.base_url}file/info?key={self.api_key}&file_code={file_code}"
+        return self._req(url)
+
+    def file_image(self, file_code: str) -> dict:
+        """
+        Get file splash, single or thumbnail image
+
+        Args:
+            file_code (str): File code
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}file/image?key={self.api_key}&file_code={file_code}"
+        return self._req(url)
+
+    def file_rename(self, file_code: str, title: str) -> dict:
+        """
+        Rename your file
+
+        Args:
+            file_code (str): File code
+            title (str): New file name
+
+        Returns:
+            dict: response
+        """
+        url = f"{self.base_url}file/rename?key={self.api_key}&file_code={file_code}&title={title}"
+        return self._req(url)
+
+    def file_search(self, search_term: str) -> dict:
+        """
+        Search your files
+
+        Args:
+            search_term (str): Search term
+
+        Returns:
+            dict: response
+        """
+        url = (
+            f"{self.base_url}search/videos?key={self.api_key}&search_term={search_term}"
+        )
+        return self._req(url)

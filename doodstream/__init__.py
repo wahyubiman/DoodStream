@@ -1,1 +1,1 @@
-from .api import DoodStream
+from .doodstream import DoodStream
