@@ -123,7 +123,7 @@ class DoodStream:
         Returns:
             dict: response
         """
-        url = f"{self.base_url}file/clone?key={self.api_key}&file_code={file_id}"
+        url = f"{self.base_url}file/clone?key={self.api_key}&file_code={file_code}"
         if fld_id != None:
             url += f"&fld_id={fld_id}"
         return self._req(url)
