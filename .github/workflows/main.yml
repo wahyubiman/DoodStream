@@ -24,10 +24,12 @@ jobs:
         run: >-
           python3 -m pip install --upgrade pip
           python3 -m pip install build ruff pytest --user
-      - name: Lint
-        run: ruff --format=github .
-      - name: Test
-        run: pytest
+      - name: Lint using ruff
+        run: >-
+          ruff --format=github --target=py38 --extend-exclude='__init__.py' .
+      - name: Test using pytest
+        run: >-
+          pytest -v
       - name: Build a binary wheel and a source tarball
         run: >-
           python3 -m build --sdist --wheel --outdir dist/ .
