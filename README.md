@@ -5,6 +5,7 @@
 ## ![https://doodstream.com/join/02i3l9brejix](https://i.doodcdn.com/img/468x60.gif)
 
 [![Downloads](https://static.pepy.tech/badge/doodstream)](https://pepy.tech/project/doodstream)
+![](https://github.com/wahyubiman/DoodStream/actions/workflows/publish-test-pypi.yml/badge.svg)
 
 DoodStream is a video hosting service were you can upload videos, share & make money.
 
@@ -19,7 +20,7 @@ Don't have account? register [here](https://doodstream.com/join/02i3l9brejix).
 - Premium bandwidth
 - [Supported host for remote upload](https://help.doodstream.com/en/article/supported-remote-hosts-1fy5vnn/)
 
-More detail [Click Me](https://doodstream.com/api)
+More detail [Click Me](https://doodstream.com/api-docs)
 
 ---
 
