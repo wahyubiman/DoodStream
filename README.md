@@ -5,7 +5,7 @@
 ## ![https://doodstream.com/join/02i3l9brejix](https://i.doodcdn.com/img/468x60.gif)
 
 [![Downloads](https://static.pepy.tech/badge/doodstream)](https://pepy.tech/project/doodstream)
-![](https://github.com/wahyubiman/DoodStream/actions/workflows/publish-test-pypi.yml/badge.svg)
+![](https://github.com/wahyubiman/DoodStream/actions/workflows/main.yml/badge.svg)
 
 DoodStream is a video hosting service were you can upload videos, share & make money.
 
